@@ -55,11 +55,13 @@ const userSchema = new mongoose.Schema({
     }],
     followers: [{
         type: ObjectId,
-        ref:"User"
+        ref:"User",
+        unique: true,
     }],
     following: [{
         type: ObjectId,
-        ref:"User"
+        ref:"User",
+        unique: true
     }]
 })
 userSchema.virtual('posts', {

@@ -4,6 +4,7 @@ const User = require('../models/user')
 const auth = require('../middleware/auth')
 const Post = require('../models/post')
 
+
 // Signup a new user
 router.post('/users', async (req, res) => {
     const user = new User(req.body)
@@ -34,9 +35,12 @@ router.post('/users/login', async (req, res) => {
 router.get('/users/me', auth, async (req, res) => {
     res.send({
         Name: req.user.name,
+        Username: req.user.username,
         Email: req.user.email,
         Age: req.user.age,
-        Username: req.user.username
+        Followers: req.user.followers.length,
+        Following: req.user.following.length
+        
     })
 })
 
@@ -86,28 +90,45 @@ router.delete('/users/me', auth, async (req, res) => {
 
 // Follow an account
 router.patch('/users/follow/:id', auth, async (req, res) => {
+
+
+    const user = await User.findById(req.params.id)
+    if (!user) {
+        return res.status(404).send({ error: "User not found" })
+    }
+   
+    if (req.user.username === user.username) {
+        return res.status(400).send({ error: "Cannot follow yourself" })
+    }
+     
+    if (req.user.username !== user.username) {
+       const follow =  req.user.following.find(element => element.toString()===req.params.id)
+       if(follow!==undefined){
+           return res.send({error:"Already following"})
+       }
+    }
     
-//         const user = await User.findById( req.params.id )
-//         if (!user) {
-//             return res.status(404).send({ error: "User not found" })
-//         }
-//         // res.send(user.username)
-        
-//         if (req.user.username === user.username) {
-//             return res.status(400).send({ error: "Cannot follow yourself" })
-//         } console.log(user.username)
-//         //  else if (req.user.username !== user.username) {
-//         //     req.user.following.forEach((follow) => {
-//         //         if (follow === user.username) {
-//         //             return res.send({
-//         //                 error: "Already following!"
-//         //             })
-//         //         }
-//         //     })}
-//         //     req.user.following.push(user.username)
-//         //     await req.user.save()
-//         //     res.send(req.user.following)
+    User.findByIdAndUpdate(req.params.id, {
+        $push: { followers: req.user._id  }
+    }, {
+        new: true
+    }, (err, result) => {
+        if (err) {
+            return res.status(422).json({ error: err })
+        }
+        User.findByIdAndUpdate(req.user._id, {
+            $push: { following: req.params.id }
+
+        }, { new: true }).then(result => {
+            res.json(result)
+        }).catch(err => {
+            return res.status(422).json({ error: err })
+        })
+
+    }
+    )
     
+
 })
 
 module.exports = router
