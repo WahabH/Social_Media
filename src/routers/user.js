@@ -33,14 +33,14 @@ router.post('/users/login', async (req, res) => {
 
 // Read user profile
 router.get('/users/me', auth, async (req, res) => {
-    res.send({
+        res.send({
         Name: req.user.name,
         Username: req.user.username,
         Email: req.user.email,
         Age: req.user.age,
-        Followers: req.user.followers.length,
-        Following: req.user.following.length
-        
+        Followers: req.user.followers,
+        Following: req.user.following
+
     })
 })
 
@@ -96,20 +96,20 @@ router.patch('/users/follow/:id', auth, async (req, res) => {
     if (!user) {
         return res.status(404).send({ error: "User not found" })
     }
-   
+
     if (req.user.username === user.username) {
         return res.status(400).send({ error: "Cannot follow yourself" })
     }
-     
+
     if (req.user.username !== user.username) {
-       const follow =  req.user.following.find(element => element.toString()===req.params.id)
-       if(follow!==undefined){
-           return res.send({error:"Already following"})
-       }
+        const follow = req.user.following.find(element => element.toString() === req.params.id)
+        if (follow !== undefined) {
+            return res.send({ error: "Already following" })
+        }
     }
-    
+
     User.findByIdAndUpdate(req.params.id, {
-        $push: { followers: req.user._id  }
+        $push: { followers: req.user._id }
     }, {
         new: true
     }, (err, result) => {
@@ -124,11 +124,23 @@ router.patch('/users/follow/:id', auth, async (req, res) => {
         }).catch(err => {
             return res.status(422).json({ error: err })
         })
+    })
+})
 
+// Unfollow an account
+router.patch('/users/unfollow/:id', auth, async(req, res)=>{
+    try{
+        const follow = await User.findById(req.params.id)
+        if(!follow){
+            return res.status(404).send({error:"Account not found"})
+        }
+        req.user.following = req.user.following.filter((element)=>{
+            return element.toString() !== req.params.id.toString()
+        })
+        res.send(req.user)
+    }catch(e){
+        res.send(e) 
     }
-    )
-    
-
 })
 
 module.exports = router

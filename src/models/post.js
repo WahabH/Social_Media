@@ -15,6 +15,10 @@ const postSchema = new mongoose.Schema({
         ref:"User",
     }],
     images:[{
+        type: String,
+        required: true
+    }],
+    comments:[{
         type: String
     }]
 })
